@@ -200,7 +200,7 @@ module.exports = function(grunt) {
     function processDirective(list, directive) {
       _(options.paths).forEach(function(filepath) {
         _.each(list, function(item) {
-          item = path.join(filepath, item);
+          item = path.relative(filepath, item);
           grunt.file.expand(grunt.template.process(item)).map(function(ea) {
             importDirectives.push('@import' + ' (' + directive + ') ' + '"' + ea + '";');
           });
