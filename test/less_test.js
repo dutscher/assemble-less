@@ -1,46 +1,25 @@
-/*!
- * grunt-contrib-less
- * http://gruntjs.com/
- * Copyright (c) 2014 Tyler Kellen, contributors
- * Licensed under the MIT license.
- *
- * assemble-less
- * http://github.com/assemble/assemble-less
- * Copyright (c) 2014 Jon Schlinkert, Brian Woodward, contributors
- * Licensed under the MIT license.
- */
-
 'use strict';
 
 var grunt = require('grunt');
-var fs = require('fs');
 
 var read = function(src) {
   return grunt.util.normalizelf(grunt.file.read(src));
 };
 
+
 exports.less = {
-  variables: function(test) {
-    test.expect(2);
-
-    var actual   = read('test/actual/globalVars.css');
-    var expected = read('test/expected/globalVars.css');
-    test.equal(expected, actual, 'should prepend variables to less source files.');
-
-    actual   = read('test/actual/modifyVars.css');
-    expected = read('test/expected/modifyVars.css');
-    test.equal(expected, actual, 'should append variables to less source files.');
-
-    test.done();
-  },
   compile: function(test) {
-    test.expect(2);
+    test.expect(3);
 
-    var actual   = read('test/actual/less.css');
-    var expected = read('test/expected/less.css');
+    var actual = read('tmp/less.css');
+    var expected = read('test/expected/string.css');
+    test.equal(expected, actual, 'should compile less with a string configuration');
+
+    actual = read('tmp/less.css');
+    expected = read('test/expected/less.css');
     test.equal(expected, actual, 'should compile less, with the ability to handle imported files from alternate include paths');
 
-    actual   = read('test/actual/concat.css');
+    actual = read('tmp/concat.css');
     expected = read('test/expected/concat.css');
     test.equal(expected, actual, 'should concat output when passed an array');
 
@@ -49,100 +28,94 @@ exports.less = {
   compress: function(test) {
     test.expect(1);
 
-    var actual   = read('test/actual/compress.css');
+    var actual = read('tmp/compress.css');
     var expected = read('test/expected/compress.css');
     test.equal(expected, actual, 'should compress output when compress option is true');
 
     test.done();
   },
-  templates: function(test) {
-    test.expect(2);
+  invalid: function(test) {
+    test.expect(4);
 
-    var actual   = read('test/actual/lodash/templates-lodash.css');
-    var expected = read('test/expected/templates-lodash.css');
-    test.equal(expected, actual, 'should replace lodash templates in code comments with variables from JSON or YAML.');
+    grunt.util.spawn({
+      grunt: true,
+      args: ['--force', 'less_error:error']
+    }, function doneFunction(error, result, code) {
+      test.equal(error, null, 'Error should be null');
+      test.equal(code, 0, 'the code should be 0');
+      test.ok(
+        /ParseError: Unrecognised input\./.test(result.stdout),
+        'The result should contain error info.');
+      test.ok(/\bDone\b/.test(result.stdout), 'The result should contain the "Done" word');
 
-    actual   = read('test/actual/lodash/templates-palette.css');
-    expected = read('test/expected/templates-palette.css');
-    test.equal(expected, actual, 'should replace lodash templates in LESS code with variables from JSON or YAML.');
-
-    test.done();
+      test.done();
+    });
   },
   nopaths: function(test) {
     test.expect(1);
 
-    var actual   = read('test/actual/nopaths.css');
+    var actual = read('tmp/nopaths.css');
     var expected = read('test/expected/nopaths.css');
     test.equal(expected, actual, 'should default paths to the dirname of the less file');
 
     test.done();
   },
-  cleancss: function(test) {
+  pathsFunction: function(test) {
+    test.expect(1);
+
+    var actual = read('tmp/pathsFunction.css');
+    var expected = read('test/expected/pathsFunction.css');
+    test.equal(expected, actual, 'should accept function that returns paths');
+    test.done();
+  },
+  plugins: function(test) {
     test.expect(2);
 
-    var actual = read('test/actual/cleancss.css');
-    var expected = read('test/expected/cleancss.css');
-    test.equal(expected, actual, 'should cleancss output when cleancss option is true');
+    var actual = read('tmp/plugins.css');
+    var expected = read('test/expected/plugins.css');
+    test.equal(expected, actual, 'using cleancss plugin, it should cleancss output when cleancss plugin is used and keepSpecialComments is disabled');
 
-    actual = read('test/actual/cleancssReport.css');
-    expected = read('test/expected/cleancssReport.css');
-    test.equal(expected, actual, 'should cleancss output when cleancss option is true and concating is enable');
+    actual = read('tmp/pluginCleancss.css');
+    expected = read('test/expected/pluginCleancss.css');
+    test.equal(expected, actual, 'should cleancss output when cleancss option is true and concating is enabled');
 
     test.done();
   },
   ieCompat: function(test) {
     test.expect(2);
 
-    var actual = read('test/actual/ieCompatFalse.css');
+    var actual = read('tmp/ieCompatFalse.css');
     var expected = read('test/expected/ieCompatFalse.css');
-    test.equal(expected, actual, 'should generate data-uris no matter the size when ieCompat option is true');
+    test.equal(expected.length, actual.length, 'should generate data-uris no matter the size when ieCompat option is true');
 
-    actual   = read('test/actual/ieCompatTrue.css');
+    actual = read('tmp/ieCompatTrue.css');
     expected = read('test/expected/ieCompatTrue.css');
     test.equal(expected, actual, 'should generate data-uris only when under the 32KB mark for Internet Explorer 8');
 
     test.done();
   },
-   banner: function(test) {
-     test.expect(1);
-
-     var actual   = read('test/actual/banners/banner.css');
-     var expected = read('test/expected/banners/banner.css');
-     test.equal(expected, actual, 'should prepend custom banner');
-
-     test.done();
-   },
-   strip_banner: function(test) {
-     test.expect(3);
-
-     var actual   = read('test/actual/strip_banners/banner.css');
-     var expected = read('test/expected/strip_banners/banner.css');
-     test.equal(expected, actual, 'should strip existing banners');
-
-     actual   = read('test/actual/strip_banners/banner2.css');
-     expected = read('test/expected/strip_banners/banner2.css');
-     test.equal(expected, actual, 'should strip existing banners [2]');
-
-     actual   = read('test/actual/strip_banners/banner3.css');
-     expected = read('test/expected/strip_banners/banner3.css');
-     test.equal(expected, actual, 'should strip existing banners [3]');
-
-     test.done();
-   },
-
   variablesAsLess: function(test) {
     test.expect(1);
 
-    var actual = read('test/actual/variablesAsLess.css');
+    var actual = read('tmp/variablesAsLess.css');
     var expected = read('test/expected/variablesAsLess.css');
     test.equal(expected, actual, 'should process css files imported less files');
+
+    test.done();
+  },
+  modifyVars: function(test) {
+    test.expect(1);
+
+    var actual = read('tmp/modifyVars.css');
+    var expected = read('test/expected/modifyVars.css');
+    test.equal(expected, actual, 'should override global variables');
 
     test.done();
   },
   sourceMap: function(test) {
     test.expect(1);
 
-    var actual = read('test/actual/sourceMap.css');
+    var actual = read('tmp/sourceMap.css');
     test.ok(actual.indexOf('/*# sourceMappingURL=') !== -1, 'compiled file should include a source map.');
 
     test.done();
@@ -150,7 +123,7 @@ exports.less = {
   sourceMapFilename: function(test) {
     test.expect(1);
 
-    var sourceMap = grunt.file.readJSON('test/actual/sourceMapFilename.css.map');
+    var sourceMap = grunt.file.readJSON('tmp/sourceMapFilename.css.map');
     test.equal(sourceMap.sources[0], 'test/fixtures/style3.less', 'should generate a sourceMap with the less file reference.');
 
     test.done();
@@ -158,14 +131,22 @@ exports.less = {
   sourceMapURL: function(test) {
     test.expect(1);
 
-    var actual = read('test/actual/sourceMapWithCustomURL.css');
+    var actual = read('tmp/sourceMapWithCustomURL.css');
     test.ok(actual.indexOf('/*# sourceMappingURL=custom/url/for/sourceMap.css.map') !== -1, 'compiled file should have a custom source map URL.');
     test.done();
   },
   sourceMapBasepath: function(test) {
     test.expect(1);
 
-    var sourceMap = grunt.file.readJSON('test/actual/sourceMapBasepath.css.map');
+    var sourceMap = grunt.file.readJSON('tmp/sourceMapBasepath.css.map');
+    test.equal(sourceMap.sources[0], 'style3.less', 'should use the basepath for the less file references in the generated sourceMap.');
+
+    test.done();
+  },
+  sourceMapBasepathFunction: function(test) {
+    test.expect(1);
+
+    var sourceMap = grunt.file.readJSON('tmp/sourceMapBasepath.css.map');
     test.equal(sourceMap.sources[0], 'style3.less', 'should use the basepath for the less file references in the generated sourceMap.');
 
     test.done();
@@ -173,26 +154,48 @@ exports.less = {
   sourceMapRootpath: function(test) {
     test.expect(1);
 
-    var sourceMap = grunt.file.readJSON('test/actual/sourceMapRootpath.css.map');
+    var sourceMap = grunt.file.readJSON('tmp/sourceMapRootpath.css.map');
     test.equal(sourceMap.sources[0], 'http://example.org/test/fixtures/style3.less', 'should use the rootpath for the less file references in the generated sourceMap.');
 
     test.done();
   },
-  // sourceMapLessInline: function(test) {
-  //   test.expect(1);
+  sourceMapLessInline: function(test) {
+    test.expect(1);
 
-  //   var expected = read('test/fixtures/style3.less');
-  //   var sourceMap = grunt.file.readJSON('test/actual/sourceMapLessInline.css.map').sourcesContent[0];
-  //   test.equal(grunt.util.normalizelf(sourceMap), grunt.util.normalizelf(expected), 'should put the less file into the generated sourceMap instead of referencing them.');
+    var expected = read('test/fixtures/style3.less');
+    var sourceMap = grunt.file.readJSON('tmp/sourceMapLessInline.css.map').sourcesContent[0];
+    test.equal(grunt.util.normalizelf(sourceMap), grunt.util.normalizelf(expected), 'should put the less file into the generated sourceMap instead of referencing them.');
 
-  //   test.done();
-  // },
+    test.done();
+  },
+  calc: function(test) {
+    test.expect(1);
+
+    var actual = read('tmp/calc.css');
+    var expected = read('test/expected/calc.css');
+    test.equal(expected, actual, 'should process calc function with `strictMath`');
+
+    test.done();
+  },
   customFunctions: function(test) {
     test.expect(1);
 
-    var actual = read('test/actual/customFunctions.css');
+    var actual = read('tmp/customFunctions.css');
     var expected = read('test/expected/customFunctions.css');
     test.equal(expected, actual, 'should execute custom functions');
+
+    test.done();
+  },
+  banner: function(test) {
+    test.expect(2);
+
+    var actual = read('tmp/banner.css');
+    var expected = read('test/expected/banner.css');
+    test.equal(expected, actual, 'should add a banner');
+
+    actual = read('tmp/banner2.css');
+    expected = read('test/expected/banner2.css');
+    test.equal(expected, actual, 'should add a banner to the second file');
 
     test.done();
   }
